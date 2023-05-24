@@ -1,0 +1,176 @@
+from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QPushButton
+import sys
+import paramiko
+
+#IP address of the Raspberry Pi (STATIC IP)
+ip_address = "192.168.1.100"
+
+class LoginDialog(QDialog):
+    def _init_(self):
+        super()._init_()
+        self.setWindowTitle("Login")
+        self.setFixedSize(300, 250)
+        self.initUI()
+
+    def initUI(self):
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.username_label = QLabel("Username:", self)
+        self.username_input = QLineEdit(self)
+        layout.addWidget(self.username_label)
+        layout.addWidget(self.username_input)
+
+        self.password_label = QLabel("Password:", self)
+        self.password_input = QLineEdit(self)
+        self.password_input.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.password_label)
+        layout.addWidget(self.password_input)
+
+        self.login_button = QPushButton("Login", self)
+        self.login_button.clicked.connect(self.login)
+        layout.addWidget(self.login_button)
+
+    def login(self):
+        username = self.username_input.text()
+        password = self.password_input.text()
+        if username == "morco" and password == "12345":
+            self.accept()
+        else:
+            QtWidgets.QMessageBox.warning(self, "Error", "Invalid username or password")
+
+def send_command(x, y):
+    # Set up SSH client
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect('172.20.10.3', username='pi', password='12345')
+    
+    # Set the command to execute on the Raspberry Pi
+    command = f"rostopic pub /app/x std_msgs/Float32 {x}"
+    
+    # Execute the command on the Raspberry Pi
+    _, _, _ = ssh.exec_command(command)
+    
+
+    # Set the command to execute on the Raspberry Pi
+    command = f"rostopic pub /app/y std_msgs/Float32 {y}"
+
+
+    
+    # Execute the command on the Raspberry Pi
+    _, _, _ = ssh.exec_command(command)
+    
+    command = f"sudo shutdown"
+
+    
+    
+    # Execute the command on the Raspberry Pi
+    _, _, _ = ssh.exec_command(command)
+    
+    # Print the output of the command
+    #print(stdout.read().decode())
+    
+    # Close the SSH connection
+    ssh.close()
+
+
+class CafeApp(QMainWindow):
+
+    def _init_(self):
+        super()._init_()
+        self.setWindowTitle("Waiter Bot")
+        self.setFixedSize(650, 700)
+        self.setGeometry(100, 100, 400, 716)
+        self.initUI()
+
+    def initUI(self):
+        central_widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(central_widget)
+
+        # Set the background image 
+        background_label = QtWidgets.QLabel(central_widget)
+        background_label.setGeometry(QtCore.QRect(0 , 0 , self.width(), self.height())) 
+        background_image = QtGui.QPixmap("Robot_assembly.jpg")
+        background_image = background_image.scaled(self.width(), self.height())
+        background_label.setPixmap(background_image)
+
+        self.welcome_label = QtWidgets.QLabel(central_widget)
+        self.welcome_label.setGeometry(QtCore.QRect(150, 10, 300, 30))
+        self.welcome_label.setText("welcome !")
+        self.welcome_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        table_width = 100
+        table_height = 100
+        table_spacing = 50
+        table_x = (self.width() - (table_width * 2 + table_spacing)) / 2
+        table_y = 50
+
+        self.table1_button = QtWidgets.QPushButton(central_widget)
+        self.table1_button.setGeometry(QtCore.QRect(50, 50, 100 , 100))
+        self.table1_button.setText("Table 1")
+        self.table1_button.clicked.connect(lambda: self.table_clicked(self.table1_button))
+        self.table1_button.setStyleSheet("background-color: transparent;")
+        self.table1_button.setFont(QtGui.QFont("Italic", 12, QtGui.QFont.Bold))
+
+
+        self.table2_button = QtWidgets.QPushButton(central_widget)
+        self.table2_button.setGeometry(QtCore.QRect(150 + 150 + 50, 50, 100, 100))
+        self.table2_button.setText("Table 2")
+        self.table2_button.clicked.connect(lambda: self.table_clicked(self.table2_button))
+        self.table2_button.setStyleSheet("background-color: transparent;")
+        self.table2_button.setFont(QtGui.QFont("Italic", 12, QtGui.QFont.Bold))
+
+
+        self.table3_button = QtWidgets.QPushButton(central_widget)
+        self.table3_button.setGeometry(QtCore.QRect(50, 50 + 100 + 100, 100, 100))
+        self.table3_button.setText("Table 3")
+        self.table3_button.clicked.connect(lambda: self.table_clicked(self.table3_button))
+        self.table3_button.setStyleSheet("background-color: transparent;")
+        self.table3_button.setFont(QtGui.QFont("Italic", 12, QtGui.QFont.Bold))
+
+
+        self.table4_button = QtWidgets.QPushButton(central_widget)
+        self.table4_button.setGeometry(QtCore.QRect(150 + 150 + 50, 50 + 50 + 150, 100, 100))
+        self.table4_button.setText("Table 4")
+        self.table4_button.clicked.connect(lambda: self.table_clicked(self.table4_button))
+        self.table4_button.setStyleSheet("background-color: transparent;")
+        self.table4_button.setFont(QtGui.QFont("Italic", 12, QtGui.QFont.Bold))
+        # self.table4_button.setIcon(QtGui.QIcon("blue_button.jpg"))
+        #self.table4_button.setIconSize(QtCore.QSize(100, 100))
+
+     
+        self.lock_timer = QtCore.QTimer(self)
+        self.lock_timer.timeout.connect(self.unlock_tables)
+
+        self.status_label = QtWidgets.QLabel(central_widget)
+        self.status_label.setGeometry(QtCore.QRect(10, 10, 200, 30))
+        self.status_label.setStyleSheet("background-color: black; color: white;")
+        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.status_label.setText("")
+
+    def table_clicked(self, button):
+        send_command(5,5)
+        for btn in [self.table1_button, self.table2_button, self.table3_button, self.table4_button]:
+            if btn != button:
+                btn.setEnabled(False)
+
+        self.status_label.setText(f"{button.text()} is in progress")
+        self.lock_timer.start(5000)  # 5 seconds
+
+    def unlock_tables(self):
+        for btn in [self.table1_button, self.table2_button, self.table3_button, self.table4_button]:
+            btn.setEnabled(True)
+        self.status_label.setText("")
+
+    def closeEvent(self, event):
+        self.lock_timer.stop()
+        event.accept()
+
+if _name_ == "_main_":
+    app = QApplication(sys.argv)
+    login_dialog = LoginDialog()
+    if login_dialog.exec_() == QDialog.Accepted:
+        cafe_app = CafeApp()
+        cafe_app.show()
+        sys.exit(app.exec_())
+        
